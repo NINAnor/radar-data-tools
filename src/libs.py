@@ -43,20 +43,20 @@ def extract_points_from_track(track_input_path, output_path, where=None, visual=
             ), cleaned_points as (
                 select
                     id,
-                    geom,
+                    ST_Force3DZ(geom, NULL) as geom,
+                    ST_M(geom) as m,
                     unnest(path) as index
                 from points
             )
             select
                 cp.id,
                 cp.index,
-                ST_AsText(cp.geom) as geom,
+                cp.geom,
+                cp.m,
                 timestamp_start + interval (
                     list_extract(trj_time.trajectory_time, cp.index)
                 ) seconds as timestamp,
-                ST_AsText(
-                    ST_Transform(cp.geom, 'EPSG:4326', 'EPSG:25835')
-                ) as geom_25835,
+                ST_Transform(cp.geom, 'EPSG:4326', 'EPSG:25835') as geom_25835,
                 year(timestamp) AS year,
                 month(timestamp) AS month
             from cleaned_points as cp
