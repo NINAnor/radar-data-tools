@@ -40,7 +40,7 @@ def full(layer, output_directory, schema, limit, output_layer, **kwargs):
     else:
         logging.debug("Tracks already present, skipping...")
     output_dir = pathlib.Path(output_directory) / output_layer
-    subprocess.run(["scripts/extract_points.sh", input_path])  # noqa: S603, S607
+    subprocess.run(["scripts/extract_ids.sh", input_path])  # noqa: S603, S607
     logging.debug("Parallel extraction of points")
     parallelize(
         ["scripts/extract_points.sh", input_path, output_dir],
