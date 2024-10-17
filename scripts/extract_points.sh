@@ -7,7 +7,7 @@ select=$(cat <<EOF
 with points as (
         select id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
         from "$1.parquet"
-        where id in ($ids,)
+        where id in ($ids)
     ), cleaned_points as (
         select
             id,
@@ -34,6 +34,8 @@ with points as (
 EOF
 )
 
+echo $select;
+
 query=$(cat <<EOF
 SET memory_limit = '2GB';
 SET enable_progress_bar = true;
@@ -42,4 +44,5 @@ COPY ($select) TO "$2/$3-${@: -1}.parquet" (format parquet,
 overwrite true, CODEC 'zstd');
 EOF
 )
+mkdir -p $2
 duckdb ":memory:" "LOAD spatial; $query"
