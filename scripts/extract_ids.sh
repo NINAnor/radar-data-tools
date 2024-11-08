@@ -9,7 +9,6 @@ EOF
 )
 
 query=$(cat <<EOF
-SET memory_limit = '$MAX_MEM';
 SET enable_progress_bar = true;
 
 COPY ($select) TO "$1" (header false);

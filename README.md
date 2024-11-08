@@ -11,7 +11,8 @@ Otherwise you can run `source .venv/bin/activate` to enter the virtual environme
 ## Run
 To execute your software run:
 ```
-radar_data_start
+nix-shell
+make
 ```
 
 ### Development

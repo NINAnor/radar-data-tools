@@ -42,10 +42,7 @@ EOF
 echo $select;
 
 query=$(cat <<EOF
-SET memory_limit = '$MAX_MEM';
-SET enable_progress_bar = true;
-
-COPY ($select) TO "$parquet_dest_path/$index.parquet" (format parquet,
+COPY ($select) TO "$parquet_dest_path/$index" (format parquet,
 overwrite true, CODEC 'zstd');
 EOF
 )
