@@ -1,13 +1,16 @@
-old="$IFS"
-IFS=','
-ids="${*:3}"
-IFS=$old
+parquet_source_path=$1
+parquet_dest_path=$2
+chunk=$3
+index=$4
+start_id=$5
 
 select=$(cat <<EOF
 with points as (
         select id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
-        from "$1.parquet"
-        where id in ($ids)
+        from "$parquet_source_path"
+        where id >= $start_id
+        order by id
+        limit $chunk
     ), cleaned_points as (
         select
             id,
@@ -28,8 +31,10 @@ with points as (
     from cleaned_points as cp
     left join (
         select id, timestamp_start, trajectory_time
-        from "$1.parquet"
-        where id in ($ids)
+        from "$parquet_source_path"
+        where id >= $start_id
+        order by id
+        limit $chunk
     ) as trj_time on trj_time.id = cp.id
 EOF
 )
@@ -37,12 +42,11 @@ EOF
 echo $select;
 
 query=$(cat <<EOF
-SET memory_limit = '2GB';
+SET memory_limit = '$MAX_MEM';
 SET enable_progress_bar = true;
 
-COPY ($select) TO "$2/$3-${@: -1}.parquet" (format parquet,
+COPY ($select) TO "$parquet_dest_path/$index.parquet" (format parquet,
 overwrite true, CODEC 'zstd');
 EOF
 )
-mkdir -p $2
 duckdb ":memory:" "LOAD spatial; $query"
