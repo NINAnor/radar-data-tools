@@ -2,7 +2,7 @@
 
 select=$(cat <<EOF
     with ordered as (
-        SELECT id, (row_number() over(order by id) -1) as index from "$2" order by id
+        SELECT id, (row_number() over(order by id) -1) as index from read_parquet("$2") order by id
     )
     select row_number() over(order by id) as idx, id from ordered where index % $3 = 0 order by id
 EOF

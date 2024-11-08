@@ -7,7 +7,7 @@ start_id=$5
 select=$(cat <<EOF
 with points as (
         select id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
-        from "$parquet_source_path"
+        from read_parquet("$parquet_source_path")
         where id >= $start_id
         order by id
         limit $chunk
@@ -31,7 +31,7 @@ with points as (
     from cleaned_points as cp
     left join (
         select id, timestamp_start, trajectory_time
-        from "$parquet_source_path"
+        from read_parquet("$parquet_source_path")
         where id >= $start_id
         order by id
         limit $chunk
