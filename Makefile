@@ -3,28 +3,30 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-.PHONY: extract_points generate_ids
+.PHONY: extract_points generate_ids generate_parquet clean
 
 output_dir := output
 tracks_table := track
 track_points_table := track_points
 
-tracks_dir := $(output_dir)/$(tracks_table)
-tracks_points_dir := $(output_dir)/$(track_points_table)
 
 YEAR = 2019
 MONTH = 10
 SCHEMA = m$(YEAR)$(MONTH)
-track_parquet_file := $(tracks_dir)/$(SCHEMA).parquet
-CHUNKS = 1000
-track_ids_file := $(tracks_dir)/$(SCHEMA)-$(CHUNKS)ids.csv
+
+tracks_dir := $(output_dir)/$(tracks_table).parquet/year=$(YEAR)/month=$(MONTH)
+tracks_points_dir := $(output_dir)/$(track_points_table).parquet/year=$(YEAR)/month=$(MONTH)
+
+track_parquet_file := $(tracks_dir)/$(SCHEMA)
+CHUNKS = 1000000
+track_ids_file := $(output_dir)/$(SCHEMA)_$(CHUNKS)-ids.csv
 
 
-joblog := $(tracks_points_dir)/job.log
-results := $(tracks_points_dir)/results.csv
+joblog := $(output_dir)/$(SCHEMA)-job.log
+results := $(output_dir)/$(SCHEMA)-results.csv
 
 
-all: $(track_parquet_file) $(track_ids_file)
+all: $(track_parquet_file) $(track_ids_file) extract_points
 
 $(tracks_dir) $(tracks_points_dir):
 	@echo "create $@ directory"
@@ -36,7 +38,7 @@ $(track_parquet_file): $(tracks_dir)
 
 $(track_ids_file):
 	@echo "extacting ids by chunks"
-	$(shell scripts/extract_ids.sh $(track_ids_file) $(track_parquet_file) $(CHUNKS))
+	$(shell ./scripts/extract_ids.sh $(track_ids_file) $(track_parquet_file) $(CHUNKS))
 
 generate_parquet: $(track_parquet_file)
 	@echo "track parquet generated"
@@ -46,4 +48,11 @@ generate_ids: $(track_ids_file)
 
 extract_points: $(tracks_points_dir)
 	@echo "extracting points"
-	cat $(track_ids_file) | parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed --results $(results) scripts/extract_points.sh $(track_parquet_file) $(tracks_points_dir) $(CHUNKS) {1} {2}
+	cat $(track_ids_file) | parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed ./scripts/extract_points.sh $(track_parquet_file) $(tracks_points_dir) $(CHUNKS) {1} {2}
+
+clean:
+	rm -f $(joblog) $(results)
+	rm -f $(tracks_points_dir)/tmp_*
+
+clean-output:
+	rm -rf $(output_dir)
