@@ -27,6 +27,7 @@ in pkgs.mkShell rec {
     # install a custom GDAL version
     unstable.gdal
     unstable.duckdb
+    unstable.grass
   ];
 
   # Run this command, only after creating the virtual environment

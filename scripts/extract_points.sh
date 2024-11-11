@@ -1,3 +1,5 @@
+#!/bin/bash
+
 parquet_source_path=$1
 parquet_dest_path=$2
 chunk=$3
@@ -21,13 +23,12 @@ with points as (
     )
     select
         cp.id,
-        cp.index,
+        cp.index as index_nr,
         cp.geom,
         cp.m,
         timestamp_start + interval (
             trj_time.trajectory_time[cp.index]
-        ) seconds as timestamp,
-        ST_Transform(cp.geom, 'EPSG:4326', 'EPSG:25835') as geom_25835
+        ) seconds as timestamp
     from cleaned_points as cp
     left join (
         select id, timestamp_start, trajectory_time
@@ -39,10 +40,8 @@ with points as (
 EOF
 )
 
-echo $select;
-
 query=$(cat <<EOF
-COPY ($select) TO "$parquet_dest_path/$index" (format parquet,
+COPY ($select) TO "$parquet_dest_path/$index.parquet" (format parquet,
 overwrite true, CODEC 'zstd');
 EOF
 )
