@@ -11,4 +11,4 @@ DEBUG = env.bool("DEBUG", default=False)
 
 logging.basicConfig(level=(logging.DEBUG if DEBUG else logging.INFO))
 
-PG_CONN_STRING = env("PG_CONNECTION_STRING")
+PG_CONN_STRING = env("PG_CONNECTION_STRING", default="")

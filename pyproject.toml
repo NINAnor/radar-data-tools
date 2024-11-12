@@ -1,28 +1,24 @@
 [project]
-authors = [
-  {name = "Niccolò Cantù", email = "niccolo.cantu@nina.no"}
-]
+authors = [{ name = "Niccolò Cantù", email = "niccolo.cantu@nina.no" }]
 # PEP 621 project metadata
 # See https://www.python.org/dev/peps/pep-0621/
 dependencies = [
   "django-environ",
   "click",
   "ibis-framework[duckdb,geospatial]",
+  "rasterio",
+  "pyarrow",
   "marimo",
 ]
 description = ""
-license = {text = "GPL-3.0+"}
+license = { text = "GPL-3.0+" }
 name = "radar_data"
 readme = "README.md"
 requires-python = ">=3.10"
 version = "0.1.0"
 
 [project.optional-dependencies]
-tools = [
-  "pre-commit",
-  "pyyaml",
-  "GitPython"
-]
+tools = ["pre-commit", "pyyaml", "GitPython"]
 
 [project.scripts]
 "radar_data_start" = "main:start"

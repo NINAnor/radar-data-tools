@@ -33,7 +33,7 @@ track_points_result := $(output_dir)/$(track_points_table).parquet/year=$(YEAR)/
 track_parquet_file := $(tracks_dir)/$(SCHEMA)
 
 # How many rows should be read in parallel
-CHUNKS = 1000000
+CHUNKS = 100000
 track_ids_file := $(output_dir)/$(SCHEMA)_$(CHUNKS)-ids.csv
 
 # Configuration for grass gis
@@ -91,15 +91,9 @@ clean:
 clean-output:
 	rm -rf $(output_dir)
 
-clean-grass:
-	rm -rf $(grass_project) 
-
-# execute Grass to compute the elevation
-$(tracks_points_elevation_path): clean-grass guard-ELEVATION_MODEL
-	grass -c EPSG:$(EPSG) $(grass_project) -e --exec scripts/grass_bulk.sh $(ELEVATION_MODEL) $(tracks_points_partitioned_dir)/ month=$(MONTH) $(tracks_points_elevation_path)
-
-generate-height: clean-grass $(tracks_points_elevation_path) clean-grass
+generate-height: 
 	@echo "compute height of points"
+	python src/main.py generate-elevation-points $(ELEVATION_MODEL) $(EPSG) $(tracks_points_partitioned_dir)
 
 grass:
 	grass $(grass_project)
