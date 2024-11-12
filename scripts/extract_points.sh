@@ -7,12 +7,16 @@ index=$4
 start_id=$5
 
 select=$(cat <<EOF
-with points as (
-        select id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
+with
+    lines as (
         from read_parquet("$parquet_source_path")
         where id >= $start_id
         order by id
         limit $chunk
+    ),
+    points as (
+        select id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
+        from lines
     ), cleaned_points as (
         select
             id,
@@ -32,10 +36,7 @@ with points as (
     from cleaned_points as cp
     left join (
         select id, timestamp_start, trajectory_time
-        from read_parquet("$parquet_source_path")
-        where id >= $start_id
-        order by id
-        limit $chunk
+        from lines
     ) as trj_time on trj_time.id = cp.id
 EOF
 )
