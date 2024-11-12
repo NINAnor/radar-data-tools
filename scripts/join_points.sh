@@ -7,7 +7,8 @@ dest_path=$3
 query=$(cat <<EOF
 COPY (select 
     s.*,
-    c.elevation as hasl
+    st_z(s.geom) - c.elevation as hagl,
+    st_z(s.geom) as hasl
     from read_parquet("$source_path") as s 
     join (from read_parquet("$elevation_path")) as c 
         on s.id = c.id and s.index_nr = c.index_nr
