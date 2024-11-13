@@ -1,10 +1,12 @@
 # Radar data scripts
 
 ## Setup
-You will need `nix` installed
+You need `nix` installed.
 
 Copy the `.env.example` to a `.env` file and fill it.
 Create a `.pgpass` file in your `HOME` and fill it with the credentials
+
+**NOTE**: Ensure that the `ELEVATION_MODEL` contains all the vectors, otherwise you'll get a error with difference between DOUBLE and VARCHAR.
 
 ## Run
 To execute the complete pipeline run:
