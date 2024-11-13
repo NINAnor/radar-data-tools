@@ -2,7 +2,7 @@
 -include .env
 export
 
-.PHONY: extract-points generate-ids generate-parquet clean clean-grass generate-height join-result check-epsg
+.PHONY: extract-points generate-ids generate-parquet clean clean-output generate-height
 
 # Declare variables
 # variables can be overridden while calling make
@@ -27,7 +27,6 @@ SCHEMA = m$(YEAR)$(MONTH)
 tracks_dir := $(output_dir)/$(tracks_table).parquet/year=$(YEAR)/month=$(MONTH)
 tracks_points_dir := $(output_dir)/$(track_points_table).parquet
 tracks_points_partitioned_dir := $(tracks_points_dir)/year=$(YEAR)/month=$(MONTH)
-tracks_points_elevation_path := $(output_dir)/$(track_points_table).parquet/year=$(YEAR)/$(MONTH)_elevation.parquet
 track_points_result := $(output_dir)/$(track_points_table).parquet/year=$(YEAR)/$(MONTH).parquet
 
 track_parquet_file := $(tracks_dir)/$(SCHEMA)
@@ -36,19 +35,13 @@ track_parquet_file := $(tracks_dir)/$(SCHEMA)
 CHUNKS = 100000
 track_ids_file := $(output_dir)/$(SCHEMA)_$(CHUNKS)-ids.csv
 
-# Configuration for grass gis
-# EPSG will be extracted from the elevation model
-EPSG = $(shell gdalsrsinfo ${ELEVATION_MODEL} -o epsg | xargs)
-grass_project := grass_db
-
-
 # Configuration for GNU parallel
 joblog := $(output_dir)/$(SCHEMA)-job.log
 elevation_joblog := $(output_dir)/$(SCHEMA)-elevation-job.log
 
 
 # This is the default pipeline
-all: $(track_parquet_file) $(track_ids_file) extract-points check-epsg generate-height join-results clean clean-grass
+all: $(track_parquet_file) $(track_ids_file) extract-points generate-height clean
 
 
 guard-%:
@@ -69,7 +62,7 @@ $(track_parquet_file): $(tracks_dir) guard-PG_HOST guard-PG_DBNAME guard-PG_USER
 # split the parquet in chunks
 $(track_ids_file):
 	@echo "extacting ids by chunks"
-	$(shell ./scripts/extract_ids.sh $(track_ids_file) $(track_parquet_file) $(CHUNKS))
+	./scripts/extract_ids.sh $(track_ids_file) $(track_parquet_file) $(CHUNKS)
 
 generate-parquet: $(track_parquet_file)
 	@echo "track parquet generated"
@@ -80,28 +73,16 @@ generate-ids: $(track_ids_file)
 # GNU-Parallel chunks processing to extract points
 extract-points: $(tracks_points_partitioned_dir)
 	@echo "extracting points"
-	cat $(track_ids_file) | parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed ./scripts/extract_points.sh $(track_parquet_file) $(tracks_points_partitioned_dir) $(CHUNKS) {1} {2}
+	parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed ./scripts/extract_points.sh $(track_parquet_file) $(tracks_points_partitioned_dir) $(CHUNKS) {1} {2} :::: $(track_ids_file)
+
+# GNU-Parallel chunks processing to get elevation model value for each pixel
+generate-height:
+	@echo "compute height of points"
+	parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed ./scripts/compute-coords.sh $(tracks_points_partitioned_dir)/_{1}.parquet $(ELEVATION_MODEL) $(tracks_points_partitioned_dir)/{1}.parquet :::: $(track_ids_file)
 
 clean:
-	rm -f $(joblog)
-	rm -f $(tracks_points_partitioned_dir)/tmp_*
-	rm -rf $(tracks_points_elevation_path)
-	rm -rf $(tracks_points_partitioned_dir)
+	rm -f $(tracks_points_partitioned_dir)/_*
 	rm -rf $(track_ids_file)
 
 clean-output:
 	rm -rf $(output_dir)
-
-generate-height: 
-	@echo "compute height of points"
-	cat $(track_ids_file) | parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed python src/main.py generate-elevation-points $(ELEVATION_MODEL) $(EPSG) $(tracks_points_partitioned_dir)/_{1}.parquet $(tracks_points_partitioned_dir)/{1}.parquet
-
-grass:
-	grass $(grass_project)
-
-join-result:
-	@echo "put together the height and the original position"
-	$(shell ./scripts/join_points.sh $(tracks_points_partitioned_dir)/\* $(tracks_points_elevation_path) $(track_points_result))
-
-check-epsg:
-	@echo "this project will uses $(EPSG) based on $(ELEVATION_MODEL)"
