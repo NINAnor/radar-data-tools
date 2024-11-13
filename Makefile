@@ -44,6 +44,7 @@ grass_project := grass_db
 
 # Configuration for GNU parallel
 joblog := $(output_dir)/$(SCHEMA)-job.log
+elevation_joblog := $(output_dir)/$(SCHEMA)-elevation-job.log
 
 
 # This is the default pipeline
@@ -93,7 +94,7 @@ clean-output:
 
 generate-height: 
 	@echo "compute height of points"
-	python src/main.py generate-elevation-points $(ELEVATION_MODEL) $(EPSG) $(tracks_points_partitioned_dir)
+	cat $(track_ids_file) | parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed python src/main.py generate-elevation-points $(ELEVATION_MODEL) $(EPSG) $(tracks_points_partitioned_dir)/_{1}.parquet $(tracks_points_partitioned_dir)/{1}.parquet
 
 grass:
 	grass $(grass_project)

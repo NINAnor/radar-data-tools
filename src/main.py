@@ -8,6 +8,7 @@ from get_elevation_point import compute_elevation
 @click.argument("elevation_model", type=click.Path(exists=True))
 @click.argument("epsg", type=click.STRING)
 @click.argument("track_points_path", type=click.STRING)
+@click.argument("output", type=click.STRING)
 def generate_elevation_points(*args, **kwargs):
     compute_elevation(*args, **kwargs)
 

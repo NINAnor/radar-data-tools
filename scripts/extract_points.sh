@@ -42,7 +42,7 @@ EOF
 )
 
 query=$(cat <<EOF
-COPY ($select) TO "$parquet_dest_path/$index.parquet" (format parquet,
+COPY ($select) TO "$parquet_dest_path/_$index.parquet" (format parquet,
 overwrite true, CODEC 'zstd');
 EOF
 )

@@ -17,18 +17,20 @@ def safe_extractor(v):
         raise e
 
 
-def compute_elevation(elevation_model, epsg, track_points_path):
+def compute_elevation(elevation_model, epsg, track_points_path, output, band=1):
     conn = duckdb.connect()
 
     def get_elevation(xs, ys, zs):
         try:
             dataset = rasterio.open(elevation_model)
-            data = pa.table({"x": xs, "y": ys})
-            pos = zip(
-                *[data[column].to_pylist() for column in data.column_names],
+            positions = zip(
+                xs.to_pylist(),
+                ys.to_pylist(),
                 strict=False,
             )
-            result = pa.array(list(map(safe_extractor, dataset.sample(pos, indexes=1))))
+            result = pa.array(
+                list(map(safe_extractor, dataset.sample(positions, indexes=band)))
+            )
             dataset.close()
             result = pc.if_else(pc.is_nan(result), None, result)
             return pc.subtract(zs, result)
@@ -46,17 +48,15 @@ def compute_elevation(elevation_model, epsg, track_points_path):
     )
 
     res = conn.sql(f"""
-        with converted as (
-            select *, st_transform(geom, 'EPSG:4326', '{epsg}', true) as converted_geom
-            from read_parquet("{track_points_path}/*")
-        ),
-        with_elevation as (
-            select
+        copy (
+            with converted as (
+                select *, st_transform(geom, 'EPSG:4326', '{epsg}', true) as converted_geom
+                from read_parquet("{track_points_path}")
+            ) select
                 *,
                 get_elevation(st_x(converted_geom), st_y(converted_geom), st_z(geom)) as elevation
             from converted
-        )
-        select * from with_elevation where elevation is not null
+        ) to '{output}' (format parquet, overwrite true, CODEC 'zstd');
     """)  # noqa: E501, S608
 
     print(res)
