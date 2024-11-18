@@ -1,0 +1,5 @@
+[book]
+authors = ["Niccolò Cantù"]
+language = "en"
+multilingual = false
+src = "src"
