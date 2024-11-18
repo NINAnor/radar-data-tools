@@ -82,7 +82,7 @@ generate-height:
 
 clean:
 	rm -f $(tracks_points_partitioned_dir)/_*
-	rm -rf $(track_ids_file)
+	rm -f $(track_ids_file)
 
 clean-output:
 	rm -rf $(output_dir)
