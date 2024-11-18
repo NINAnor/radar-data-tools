@@ -24,7 +24,7 @@ MONTH ?= 10
 SCHEMA = m$(YEAR)$(MONTH)
 
 
-tracks_dir := $(output_dir)/$(tracks_table).parquet/year=$(YEAR)/month=$(MONTH)
+tracks_dir := $(output_dir)/$(tracks_table).parquet/year=$(YEAR)
 tracks_points_dir := $(output_dir)/$(track_points_table).parquet
 tracks_points_partitioned_dir := $(tracks_points_dir)/year=$(YEAR)/month=$(MONTH)
 track_points_result := $(output_dir)/$(track_points_table).parquet/year=$(YEAR)/$(MONTH).parquet
@@ -41,28 +41,31 @@ elevation_joblog := $(output_dir)/$(SCHEMA)-elevation-job.log
 
 
 # This is the default pipeline
-all: $(track_parquet_file) $(track_ids_file) extract-points generate-height clean
-
-
-guard-%:
-	@ if [ "${${*}}" = "" ]; then \
-    	echo "Environment variable $* not set"; \
-    	exit 1; \
-	fi
+all: $(elevation_joblog)
 
 $(tracks_dir) $(tracks_points_partitioned_dir):
 	@echo "create $@ directory"
 	mkdir -p $@
 
 # produce the parquet file from the postgres database
-$(track_parquet_file): $(tracks_dir) guard-PG_HOST guard-PG_DBNAME guard-PG_USER
+$(track_parquet_file): $(tracks_dir)
 	@echo "extracting the table '$(tracks_table)' to parquet"
-	ogr2ogr -progress -lco COMPRESSION=ZSTD -lco GEOMETRY_ENCODING=WKB -of Parquet $(track_parquet_file) PG:"host='$(PG_HOST)' user='$(PG_USER)' dbname='${PG_DBNAME}'" $(SCHEMA).$(tracks_table)
+	OGR_PARQUET_ALLOW_ALL_DIMS=YES ogr2ogr -progress -lco COMPRESSION=ZSTD -lco GEOMETRY_ENCODING=WKB -of Parquet $(track_parquet_file) PG:"host='$(PG_HOST)' user='$(PG_USER)' dbname='${PG_DBNAME}'" $(SCHEMA).$(tracks_table)
 
 # split the parquet in chunks
-$(track_ids_file):
+$(track_ids_file): $(track_parquet_file)
 	@echo "extacting ids by chunks"
 	./scripts/extract_ids.sh $(track_ids_file) $(track_parquet_file) $(CHUNKS)
+
+# GNU-Parallel chunks processing to extract points
+$(joblog): $(tracks_points_partitioned_dir) $(track_ids_file)
+	@echo "points extraction..."
+	parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed ./scripts/extract_points.sh $(track_parquet_file) $(tracks_points_partitioned_dir) $(CHUNKS) {1} {2} :::: $(track_ids_file)
+
+# GNU-Parallel chunks processing to get elevation model value for each pixel
+$(elevation_joblog): $(joblog)
+	@echo "computing height of points..."
+	parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed ./scripts/compute-coords.sh $(tracks_points_partitioned_dir)/_{1}.parquet $(ELEVATION_MODEL) $(tracks_points_partitioned_dir)/{1}.parquet :::: $(track_ids_file)
 
 generate-parquet: $(track_parquet_file)
 	@echo "track parquet generated"
@@ -70,15 +73,11 @@ generate-parquet: $(track_parquet_file)
 generate-ids: $(track_ids_file)
 	@echo "force ids generated"
 
-# GNU-Parallel chunks processing to extract points
-extract-points: $(tracks_points_partitioned_dir)
-	@echo "extracting points"
-	parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed ./scripts/extract_points.sh $(track_parquet_file) $(tracks_points_partitioned_dir) $(CHUNKS) {1} {2} :::: $(track_ids_file)
+extract-points: $(joblog)
+	@echo "points extracted"
 
-# GNU-Parallel chunks processing to get elevation model value for each pixel
-generate-height:
-	@echo "compute height of points"
-	parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed ./scripts/compute-coords.sh $(tracks_points_partitioned_dir)/_{1}.parquet $(ELEVATION_MODEL) $(tracks_points_partitioned_dir)/{1}.parquet :::: $(track_ids_file)
+generate-height: $(elevation_joblog)
+	@echo "computed height of points"
 
 clean:
 	rm -f $(tracks_points_partitioned_dir)/_*
