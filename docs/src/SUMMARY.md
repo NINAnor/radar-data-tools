@@ -1,7 +1,5 @@
 # Summary
 
-## Data usage
-- [Query](./query.md)
+- [Setup the script](./setup.md)
+- [Query the data](./query.md)
 
-## Script usage
-- [Setup](./setup.md)
