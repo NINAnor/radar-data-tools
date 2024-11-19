@@ -5,7 +5,7 @@ It's possible to use DuckDB for different languages, in particular [R](https://d
 ## How to read a parquet file
 
 ```sql
-describe read_parquet('track.parquet/year=2019/m201910');
+describe select * from read_parquet('track.parquet/year=2019/m201910');
 select * from read_parquet('track_points.parquet/year=2019/month=10/*.parquet');
 ```
 
