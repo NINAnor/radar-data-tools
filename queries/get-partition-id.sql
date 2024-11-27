@@ -1,4 +1,4 @@
-LOAD spatial;
+INSTALL spatial; LOAD spatial;
 
 COPY (
     with ordered as (
