@@ -10,7 +10,7 @@ export
 # DB to use
 PG_DBNAME ?= utsira_max_1
 
-output_dir := output/$(PG_DBNAME)
+output_dir := $(OUTPUT_PATH)/$(PG_DBNAME)
 
 # Always read table with this name
 tracks_table := track
