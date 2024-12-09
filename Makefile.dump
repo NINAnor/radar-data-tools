@@ -25,21 +25,15 @@ $(location_dir) $(yearly_path) $(monthly_path):
 
 
 yearly: $(yearly_path)
-	pg_restore -f $(yearly_path)$(table_name).sql $(input) -t $(table_name)
-	pg_dedump $(yearly_path)$(table_name).sql -o $(yearly_path) -d y$(table_name)$(year)$(month).ddb
-	rm $(yearly_path)$(table_name).sql
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(yearly_path) -d y$(table_name)$(year)$(month).ddb
 	rm y$(table_name)$(year)$(month).ddb
 
 
 monthly: $(monthly_path)
-	pg_restore -f $(monthly_path)$(table_name).sql $(input) -t $(table_name)
-	pg_dedump $(monthly_path)$(table_name).sql -o $(monthly_path) -d m$(table_name)$(year)$(month).ddb
-	rm $(monthly_path)$(table_name).sql
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(monthly_path) -d m$(table_name)$(year)$(month).ddb
 	rm m$(table_name)$(year)$(month).ddb
 
 
 location: $(location_dir)
-	pg_restore -f $(location_dir)$(table_name).sql $(input) -t $(table_name)
-	pg_dedump $(location_dir)$(table_name).sql -o $(pwd)$(location_dir) -d l$(table_name)$(year)$(month).ddb
-	rm $(location_dir)$(table_name).sql
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(location_dir) -d l$(table_name)$(year)$(month).ddb
 	rm l$(table_name)$(year)$(month).ddb
