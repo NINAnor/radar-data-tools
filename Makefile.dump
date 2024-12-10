@@ -30,7 +30,7 @@ yearly: $(yearly_path)
 
 
 monthly: $(monthly_path)
-	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(monthly_path) -d m$(table_name)$(year)$(month).ddb
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(monthly_path) -d m$(table_name)$(year)$(month).ddb --custom-sql-dir queries/dedump_export -r
 	rm m$(table_name)$(year)$(month).ddb
 
 
