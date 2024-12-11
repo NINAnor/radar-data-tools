@@ -83,7 +83,7 @@ $(joblog): $(track_points_dir) $(track_ids_file)
 
 $(elevation_joblog): $(joblog)
 	@echo "computing height of points..."
-	parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed ./scripts/compute-coords.sh $(track_points_dir)/_{1}.parquet $(elevation_model_path) $(track_points_dir)/{1}.parquet :::: $(track_ids_file)
+	parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed ./scripts/compute-coords.sh $(track_points_dir)_{1}.parquet $(elevation_model_path) $(track_points_dir){1}.parquet :::: $(track_ids_file)
 
 
 track: $(elevation_joblog)
