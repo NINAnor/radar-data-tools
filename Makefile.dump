@@ -1,39 +1,91 @@
 
-
-output_dir ?= ./output
+temp_dir ?= tmp
+output_dir ?= output
 radar_name ?= max_rental
 location_name ?= lutelandet
-month ?= 1
+month ?= 01
 year ?= 2024
 
 table_name ?= radar
 
+# Variables for partitioned paths
 location_dir := $(output_dir)/$(table_name)/radar_name=$(radar_name)/location=$(location_name)/
 yearly_path := $(location_dir)year=$(year)/
 monthly_path := $(yearly_path)month=$(month)/
 
+# Variables for parquet names
+monthly_file := $(monthly_path)$(table_name).parquet
+yearly_file := $(yearly_path)$(table_name).parquet
+location_file := $(location_dir)$(table_name).parquet
 
-.PHONY: error yearly monthly location
+# Variables fot temporaty files
+monthly_stat := $(temp_dir)/$(table_name)_$(location_name)_$(year)_$(month)
+yearly_stat := $(temp_dir)/$(table_name)_$(location_name)_$(year)
+loc_stat := $(temp_dir)/$(table_name)_$(location_name)
+
+
+# Variable specific for computing elevation
+elevation_model_path ?= dem.vrt
+
+chunks = 100000
+
+track_points_stat := $(temp_dir)/track_point_$(location_name)_$(year)_$(month)
+track_points_dir := $(output_dir)/track_point/radar_name=$(radar_name)/location=$(location_name)/year=$(year)/month=$(month)/
+track_ids_file := $(monthly_stat)_$(chunks)-ids.csv
+joblog := $(monthly_stat)-job.log
+elevation_joblog := $(monthly_stat)-elevation-job.log
+
+.PHONY: error observation classification weather radar species track
 
 error:
-    @echo "Please choose one of the following target: location, yearly, monthly"
+	@echo "Please choose one of the targets"
 
 
-$(location_dir) $(yearly_path) $(monthly_path):
+$(location_dir) $(yearly_path) $(monthly_path) $(temp_dir) $(track_points_dir):
 	@echo "create $@ directory"
 	mkdir -p $@
 
 
-yearly: $(yearly_path)
-	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(yearly_path) -d y$(table_name)$(year)$(month).ddb
-	rm y$(table_name)$(year)$(month).ddb
+$(yearly_file): $(yearly_path) $(temp_dir)
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(yearly_path) -d $(yearly_stat).ddb
+	rm $(yearly_stat).ddb
 
 
-monthly: $(monthly_path)
-	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(monthly_path) -d m$(table_name)$(year)$(month).ddb --custom-sql-dir queries/dedump_export -r
-	rm m$(table_name)$(year)$(month).ddb
+$(monthly_file): $(monthly_path) $(temp_dir)
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(monthly_path) -d $(monthly_stat).ddb --custom-sql-dir queries/dedump_export -r
+	rm $(monthly_stat).ddb
 
 
-location: $(location_dir)
-	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(location_dir) -d l$(table_name)$(year)$(month).ddb
-	rm l$(table_name)$(year)$(month).ddb
+$(location_file): $(location_dir) $(temp_dir)
+	pg_restore -f - $(input) -t $(table_name) | pg_dedump -o $(location_dir) -d $(loc_stat).ddb
+	rm $(loc_stat).ddb
+
+
+observation weather: $(monthly_file)
+	@echo "Generated $@"
+
+classification: $(yearly_file)
+	@echo "Generated $@"
+
+radar species: $(location_file)
+	@echo "Generated $@"
+
+
+$(track_ids_file): $(monthly_file)
+	@echo "extacting ids by chunks"
+	./scripts/extract_ids.sh $(track_ids_file) $(monthly_file) $(chunks)
+
+
+$(joblog): $(track_points_dir) $(track_ids_file)
+	@echo "points extraction..."
+	parallel --colsep , --bar --joblog $(joblog) --resume --resume-failed ./scripts/extract_points.sh $(monthly_file) $(track_points_dir) $(chunks) {1} {2} :::: $(track_ids_file)
+
+
+$(elevation_joblog): $(joblog)
+	@echo "computing height of points..."
+	parallel --colsep , --bar --joblog $(elevation_joblog) --resume --resume-failed ./scripts/compute-coords.sh $(track_points_dir)/_{1}.parquet $(elevation_model_path) $(track_points_dir)/{1}.parquet :::: $(track_ids_file)
+
+
+track: $(elevation_joblog)
+	rm -f $(track_points_dir)/_*
+	@echo "Generated track and track points"

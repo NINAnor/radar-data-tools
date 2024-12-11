@@ -14,7 +14,7 @@ COPY (
         select
             id,
             ST_Force3DZ(geom, -99999) as geom,
-            ST_M(geom) as m,
+            -- ST_M(geom) as m,
             path[1] as index
         from points
     )
@@ -22,7 +22,7 @@ COPY (
         cp.id,
         cp.index as index_nr,
         cp.geom,
-        cp.m,
+        -- cp.m,
         timestamp_start + interval (
             trj_time.trajectory_time[cp.index]
         ) seconds as timestamp
