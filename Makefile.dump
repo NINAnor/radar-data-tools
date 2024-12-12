@@ -87,5 +87,5 @@ $(elevation_joblog): $(joblog)
 
 
 track: $(elevation_joblog)
-	rm -f $(track_points_dir)/_*
+	rm -f $(track_points_dir)_*
 	@echo "Generated track and track points"
