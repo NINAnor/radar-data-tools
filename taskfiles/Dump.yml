@@ -15,7 +15,7 @@ tasks:
       - 'pg_restore -f - {{.INPUT}} -t {{.TABLE_NAME}} | pg_dedump -o {{.OUTPUT_PATH}} -d {{.TEMP_PATH}}/duckdb --custom-sql-dir queries/dedump_export -r'
       - 'rm -rf {{.TEMP_PATH}}/duckdb'
     requires:
-      vars: [OUTPUT_PATH, TEMP_PATH, INPUT,]
+      vars: [OUTPUT_PATH, TEMP_PATH, INPUT, TABLE_NAME]
     sources:
       - '{{.INPUT}}'
     generates:
@@ -28,6 +28,7 @@ tasks:
         vars: 
           OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}'
           TEMP_PATH: '{{.TEMP_DIR}}/{{.TABLE_NAME}}_{{.LOCATION_NAME}}'
+          TABLE_NAME: '{{.TABLE_NAME}}'
     requires:
       vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME]
 
@@ -38,6 +39,7 @@ tasks:
         vars: 
           OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}'
           TEMP_PATH: '{{.TEMP_DIR}}/{{.TABLE_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}'
+          TABLE_NAME: '{{.TABLE_NAME}}'
     requires:
       vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR]
 
@@ -48,5 +50,42 @@ tasks:
         vars: 
           OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}'
           TEMP_PATH: '{{.TEMP_DIR}}/{{.TABLE_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}'
+          TABLE_NAME: '{{.TABLE_NAME}}'
     requires:
       vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR, MONTH]
+
+  "restore:observation":
+    cmds:
+      - task: 'restore:month-partitioned'
+        vars:
+          TABLE_NAME: observation
+
+  "restore:weather":
+    cmds:
+      - task: 'restore:month-partitioned'
+        vars:
+          TABLE_NAME: weather
+
+  "restore:classification":
+    cmds:
+      - task: 'restore:year-partitioned'
+        vars:
+          TABLE_NAME: classification
+
+  "restore:radar":
+    cmds:
+      - task: 'restore:location-partitioned'
+        vars:
+          TABLE_NAME: radar
+
+  "restore:species":
+    cmds:
+      - task: 'restore:location-partitioned'
+        vars:
+          TABLE_NAME: species
+
+  "restore:track":
+    cmds:
+      - task: 'restore:month-partitioned'
+        vars:
+          TABLE_NAME: track
