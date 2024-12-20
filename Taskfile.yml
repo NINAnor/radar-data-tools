@@ -4,3 +4,4 @@ dotenv: ['.env',]
 
 includes:
   db: ./taskfiles/DB.yml
+  dump: ./taskfiles/Dump.yml

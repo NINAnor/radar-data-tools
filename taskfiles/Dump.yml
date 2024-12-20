@@ -1,0 +1,52 @@
+version: '3'
+
+vars:
+  TEMP_DIR: tmp
+  OUTPUT_DIR: '{{.DATABASE_PATH | default "output" }}'
+
+tasks:
+  restore:
+    internal: true
+    desc: restores a pg_dump table into a duckdb database file
+    summary: |
+      It will run pg_dedump to extract data from the dump file into a duckdb database    
+    cmds:
+      - 'mkdir -p {{.OUTPUT_PATH}} {{.TEMP_PATH}}' 
+      - 'pg_restore -f - {{.INPUT}} -t {{.TABLE_NAME}} | pg_dedump -o {{.OUTPUT_PATH}} -d {{.TEMP_PATH}}/duckdb --custom-sql-dir queries/dedump_export -r'
+      - 'rm -rf {{.TEMP_PATH}}/duckdb'
+    requires:
+      vars: [OUTPUT_PATH, TEMP_PATH, INPUT,]
+    sources:
+      - '{{.INPUT}}'
+    generates:
+      - '{{.OUTPUT_PATH}}}/{{.TABLE_NAME}}.parquet'
+
+  "restore:location-partitioned":
+    desc: Restores a pg_dump table into a parquet file partitioned by location name
+    cmds:
+      - task: restore
+        vars: 
+          OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}'
+          TEMP_PATH: '{{.TEMP_DIR}}/{{.TABLE_NAME}}_{{.LOCATION_NAME}}'
+    requires:
+      vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME]
+
+  "restore:year-partitioned":
+    desc: Restores a pg_dump table into a parquet file partitioned by year
+    cmds:
+      - task: restore
+        vars: 
+          OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}'
+          TEMP_PATH: '{{.TEMP_DIR}}/{{.TABLE_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}'
+    requires:
+      vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR]
+
+  "restore:month-partitioned":
+    desc: Restores a pg_dump table into a parquet file partitioned by month
+    cmds:
+      - task: restore
+        vars: 
+          OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}'
+          TEMP_PATH: '{{.TEMP_DIR}}/{{.TABLE_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}'
+    requires:
+      vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR, MONTH]
