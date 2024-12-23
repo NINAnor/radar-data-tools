@@ -1,7 +1,7 @@
 LOAD spatial;
 copy (
     with elevation as (
-        select try_cast(column0 as double) as elevation, (row_number() over ()) as row_number from read_csv('/dev/stdin')
+        select try_cast(column0 as double) as elevation, (row_number() over ()) as row_number from read_csv('/dev/stdin', header = false)
     ), points as (
         select
             *, 
