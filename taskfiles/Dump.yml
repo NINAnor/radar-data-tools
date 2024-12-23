@@ -89,3 +89,15 @@ tasks:
       - task: 'restore:month-partitioned'
         vars:
           TABLE_NAME: track
+
+  "restore:all-from-data":
+    cmds:
+      - tasks: 'restore:radar'
+      - tasks: 'restore:observation'
+      - tasks: 'restore:classification'
+      - tasks: 'restore:weather'
+      - tasks: 'restore:track'
+
+  "restore:all-from-config":
+    cmds:
+      - tasks: 'restore:species'
