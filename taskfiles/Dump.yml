@@ -55,49 +55,63 @@ tasks:
       vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR, MONTH]
 
   "restore:observation":
+    desc: |
+      Restores the table observation with a month partition
     cmds:
       - task: 'restore:month-partitioned'
         vars:
           TABLE_NAME: observation
 
   "restore:weather":
+    desc: |
+      Restores the table weather with a month partition
     cmds:
       - task: 'restore:month-partitioned'
         vars:
           TABLE_NAME: weather
 
   "restore:classification":
+    desc: |
+      Restores the table classification with a year partition
     cmds:
       - task: 'restore:year-partitioned'
         vars:
           TABLE_NAME: classification
 
   "restore:radar":
+    desc: |
+      Restores the table radar with a location partition
     cmds:
       - task: 'restore:location-partitioned'
         vars:
           TABLE_NAME: radar
 
   "restore:species":
+    desc: |
+      Restores the table species with a location partition
     cmds:
       - task: 'restore:location-partitioned'
         vars:
           TABLE_NAME: species
 
   "restore:track":
+    desc: |
+      Restores the table track with a month partition
     cmds:
       - task: 'restore:month-partitioned'
         vars:
           TABLE_NAME: track
 
   "restore:all-from-data":
+    desc: |
+      Restores the table weather, radar, observarion, classification, track according to the defined partition
     cmds:
-      - tasks: 'restore:radar'
-      - tasks: 'restore:observation'
-      - tasks: 'restore:classification'
-      - tasks: 'restore:weather'
-      - tasks: 'restore:track'
+      - task: 'restore:radar'
+      - task: 'restore:observation'
+      - task: 'restore:classification'
+      - task: 'restore:weather'
+      - task: 'restore:track'
 
   "restore:all-from-config":
     cmds:
-      - tasks: 'restore:species'
+      - task: 'restore:species'
