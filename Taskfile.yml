@@ -5,4 +5,5 @@ dotenv: ['.env',]
 includes:
   db: ./taskfiles/DB.yml
   dump: ./taskfiles/Dump.yml
+  pg: ./taskfiles/PG.yml
   track: ./taskfiles/Track.yml

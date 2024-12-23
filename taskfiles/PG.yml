@@ -1,0 +1,111 @@
+version: '3'
+
+vars:
+  PORT: 5432
+  OUTPUT_DIR: '{{.DATABASE_PATH | default "output" }}'
+
+tasks:
+  export:
+    desc: |
+      Export a table to parquet
+    cmds:
+      - 'mkdir -p {{.OUTPUT_PATH}}'
+      - './scripts/pg_export.sh {{.SCHEMA}} {{.TABLE_NAME}} {{.OUTPUT_PATH}}'
+    env:
+      PGPORT: '{{.PORT}}'
+    requires:
+      vars: [SCHEMA, TABLE_NAME, OUTPUT_PATH]
+      env: [PGDATABASE, PGHOST, PGUSER]
+
+  "export:location-partitioned":
+    desc: Exports a postgres table into a parquet file partitioned by location name
+    cmds:
+      - task: export
+        vars: 
+          OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}'
+          TABLE_NAME: '{{.TABLE_NAME}}'
+    requires:
+      vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, SCHEMA]
+
+  "export:year-partitioned":
+    desc: Exports a postgres table into a parquet file partitioned by year
+    cmds:
+      - task: export
+        vars: 
+          OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}'
+          TABLE_NAME: '{{.TABLE_NAME}}'
+    requires:
+      vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR, SCHEMA]
+
+  "export:month-partitioned":
+    desc: Exports a postgres table into a parquet file partitioned by month
+    cmds:
+      - task: export
+        vars: 
+          OUTPUT_PATH: '{{.OUTPUT_DIR}}/{{.TABLE_NAME}}/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}'
+          TABLE_NAME: '{{.TABLE_NAME}}'
+          SCHEMA: '{{.SCHEMA | default "m{{.YEAR}}{{.MONTH}}" }}'
+    requires:
+      vars: [TABLE_NAME, RADAR_NAME, LOCATION_NAME, YEAR, MONTH]
+
+  "export:observation":
+    desc: |
+      Exports the table observation with a month partition
+    cmds:
+      - task: 'export:month-partitioned'
+        vars:
+          TABLE_NAME: observation
+
+  "export:weather":
+    desc: |
+      Exports the table weather with a month partition
+    cmds:
+      - task: 'export:month-partitioned'
+        vars:
+          TABLE_NAME: weather
+
+  "export:classification":
+    desc: |
+      Exports the table classification with a year partition
+    cmds:
+      - task: 'export:month-partitioned'
+        vars:
+          TABLE_NAME: classification
+
+  "export:radar":
+    desc: |
+      Exports the table radar with a location partition
+    cmds:
+      - task: 'export:month-partitioned'
+        vars:
+          TABLE_NAME: radar
+
+  "export:species":
+    desc: |
+      Exports the table species with a location partition
+    cmds:
+      - task: 'export:location-partitioned'
+        vars:
+          TABLE_NAME: species
+
+  "export:track":
+    desc: |
+      Exports the table track with a month partition
+    cmds:
+      - task: 'export:month-partitioned'
+        vars:
+          TABLE_NAME: track
+
+  "export:all-from-data":
+    desc: |
+      Exports the table weather, radar, observarion, classification, track according to the defined partition
+    cmds:
+      - task: 'export:radar'
+      - task: 'export:observation'
+      - task: 'export:classification'
+      - task: 'export:weather'
+      - task: 'export:track'
+
+  "export:all-from-config":
+    cmds:
+      - task: 'export:species'
