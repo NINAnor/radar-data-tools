@@ -8,11 +8,12 @@ COPY (
         limit $chunk
     ),
     points as (
-        select id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
+        select id, internal_id, unnest(st_dump(ST_Points(trajectory)), recursive := true) as geom
         from lines
     ), cleaned_points as (
         select
             id,
+            internal_id,
             ST_Force3DZ(geom, -99999) as geom,
             -- ST_M(geom) as m,
             path[1] as index
@@ -20,6 +21,7 @@ COPY (
     )
     select
         cp.id,
+        cp.internal_id as internal_id,
         cp.index as index_nr,
         cp.geom,
         -- cp.m,
@@ -31,4 +33,4 @@ COPY (
         select id, timestamp_start, trajectory_time
         from lines
     ) as trj_time on trj_time.id = cp.id
-) TO "$parquet_dest_path/_$index.parquet" (format parquet, overwrite true, CODEC zstd);
+) TO "$parquet_dest_path/$index.parquet" (format parquet, overwrite true, CODEC zstd);

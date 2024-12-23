@@ -9,12 +9,16 @@ copy (
         from read_parquet("$parquet_source_path")
     )
     select 
-        p.*,
+        p.id,
+        p.internal_id,
+        p.index_nr,
         CASE 
             WHEN e.elevation is null THEN null
             ELSE (st_z(p.geom) - e.elevation)
-        END as hogl
+        END as hogl,
+        '$elevation_model_path' as computed_from_path,
+        now() as created_at
     from points as p 
-    join elevation as e on p.row_number = e.row_number
+    left join elevation as e on p.row_number = e.row_number
     order by p.row_number
 ) to "$destination_path" (format parquet, overwrite true, CODEC zstd);
