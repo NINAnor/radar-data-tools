@@ -107,5 +107,7 @@ tasks:
       - task: 'export:track'
 
   "export:all-from-config":
+    desc: |
+      Export tables from the config schema
     cmds:
       - task: 'export:species'
