@@ -6,6 +6,7 @@ vars:
 
 tasks:
   restore:
+    label: 'restore-{{.TABLE_NAME}}-{{.INPUT}}'
     internal: true
     desc: restores a pg_dump table into a duckdb database file
     summary: |
@@ -18,8 +19,6 @@ tasks:
       vars: [OUTPUT_PATH, TEMP_PATH, INPUT, TABLE_NAME]
     sources:
       - '{{.INPUT}}'
-    generates:
-      - '{{.OUTPUT_PATH}}}/{{.TABLE_NAME}}.parquet'
 
   "restore:location-partitioned":
     desc: Restores a pg_dump table into a parquet file partitioned by location name
@@ -113,5 +112,7 @@ tasks:
       - task: 'restore:track'
 
   "restore:all-from-config":
+    desc: |
+      Restores tables from a config dump
     cmds:
       - task: 'restore:species'

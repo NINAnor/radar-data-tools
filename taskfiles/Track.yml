@@ -8,6 +8,7 @@ vars:
 
 tasks:
   "generate:track-points":
+    label: 'generate-track-points_{{.RADAR_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}'
     desc: |
       Extract track points from track linestrings
     cmds:
@@ -15,13 +16,14 @@ tasks:
       - 'duckdb -csv -noheader -separator "," ":memory:" "$(envsubst <queries/get-partition-id.sql)" | parallel --colsep , --bar --joblog {{.joblog}} --resume --resume-failed ./scripts/extract_points.sh {{.parquet_source}} {{.output_path}} {{.CHUNKS}} {1} {2}'
     vars:
       joblog: '{{.TEMP_DIR}}/track_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}_{{.CHUNKS}}-points.log'
-      partition_file: '{{.TEMP_DIR}}/track_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}_{{.CHUNKS}}-ids.csv'
       output_path: '{{.OUTPUT_DIR}}/track_point/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
     env:
       parquet_source: '{{.OUTPUT_DIR}}/track/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/track.parquet'
       chunk_size: '{{.CHUNKS}}'
     requires: 
       vars: [RADAR_NAME, YEAR, LOCATION_NAME, MONTH]
+    sources:
+      - '{{.OUTPUT_DIR}}/track/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/track.parquet'
 
   "generate:track-points-hogl":
     desc: |
@@ -30,7 +32,6 @@ tasks:
       - task: "generate:track-points"
         vars:
           joblog: '{{.TEMP_DIR}}/track_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}_{{.CHUNKS}}-points.log'
-          partition_file: '{{.TEMP_DIR}}/track_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}_{{.CHUNKS}}-ids.csv'
           parquet_source: '{{.OUTPUT_DIR}}/track/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/track.parquet'
           output_path: '{{.OUTPUT_DIR}}/track_point/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
       - 'mkdir -p {{.output_path}}'
@@ -41,3 +42,8 @@ tasks:
       output_path: '{{.OUTPUT_DIR}}/track_point_hogl/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
     requires: 
       vars: [RADAR_NAME, YEAR, LOCATION_NAME, MONTH, ELEVATION_MODEL_PATH]
+    sources:
+      - '{{.OUTPUT_DIR}}/track_point/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
+      - '{{.ELEVATION_MODEL_PATH}}'
+    label: 'generate-track-points-hogl_{{.RADAR_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}_{{.ELEVATION_MODEL_PATH}}'
+
