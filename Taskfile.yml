@@ -7,3 +7,13 @@ includes:
   dump: ./taskfiles/Dump.yml
   pg: ./taskfiles/PG.yml
   track: ./taskfiles/Track.yml
+
+tasks:
+  queue:
+    desc: Run a queue of tasks given a tsv file
+    cmds:
+      - 'parallel -j1 --dryrun --colsep " " --bar --joblog {{.joblog}} --resume --halt-on-error 2 --resume-failed DATABASE_PATH={{.OUTPUT_DIR}} task {} :::: {{.task_queue}}'
+    vars:
+      task_queue: tasks
+      joblog: tasks.log
+      DATABASE_PATH: '{{.DATABASE_PATH | default "output"}}'
