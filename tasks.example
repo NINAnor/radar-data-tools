@@ -1,3 +1,3 @@
-dump:restore:all-from-config RADAR_NAME=radar LOCATION_NAME=oslo MONTH=01 YEAR=2024 INPUT=example_config_dump.backup
-dump:restore:all-from-data RADAR_NAME=radar LOCATION_NAME=oslo MONTH=01 YEAR=2024 INPUT=example_data_dump.backup
-track:generate:track-points-hogl RADAR_NAME=radar LOCATION_NAME=oslo MONTH=01 YEAR=2024 ELEVATION_MODEL_PATH=dsm.tif
+dump:restore:all-from-config	RADAR_NAME=radar	LOCATION_NAME=oslo	MONTH=01	YEAR=2024	INPUT=example_config_dump.backup
+dump:restore:all-from-data	RADAR_NAME=radar	LOCATION_NAME=oslo	MONTH=01	YEAR=2024	INPUT=example_data_dump.backup
+track:generate:track-points-hogl	RADAR_NAME=radar	LOCATION_NAME=oslo	MONTH=01	YEAR=2024	ELEVATION_MODEL_PATH=dsm.tif

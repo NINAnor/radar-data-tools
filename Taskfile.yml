@@ -12,7 +12,7 @@ tasks:
   queue:
     desc: Run a queue of tasks given a tsv file
     cmds:
-      - 'parallel -j1 --colsep " " --bar --joblog {{.joblog}} --resume --halt-on-error 2 --resume-failed DATABASE_PATH={{.OUTPUT_DIR}} task {} :::: {{.task_queue}}'
+      - 'parallel -j1 --colsep "\t" --bar --joblog {{.joblog}} --resume --halt-on-error 2 --resume-failed DATABASE_PATH={{.OUTPUT_DIR}} task {} :::: {{.task_queue}}'
     vars:
       task_queue: tasks
       joblog: tasks.log
