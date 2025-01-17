@@ -1,7 +1,7 @@
 LOAD spatial;
 copy (
     with elevation as (
-        select try_cast(column0 as double) as elevation, (row_number() over ()) as row_number from read_csv('/dev/stdin', header = false)
+        select try_cast(column2 as double) as elevation, (row_number() over ()) as row_number from read_csv('$hogl_csv', header = false)
     ), points as (
         select
             *, 
@@ -16,6 +16,7 @@ copy (
             WHEN e.elevation is null THEN null
             ELSE (st_z(p.geom) - e.elevation)
         END as hogl,
+        e.elevation as elevation,
         '$elevation_model_path' as computed_from_path,
         now() as created_at
     from points as p 
