@@ -6,7 +6,7 @@ tasks:
     summary: |
       It will run a series of SQL queries to import inside a duckdb file all the contents of all the parquet files
     vars:
-      DB_NAME: materialized
+      DB_NAME: '{{.DB_NAME| default "materialized"}}'
     cmds:
       - './scripts/materialize.sh {{.DATABASE_PATH}} {{.DB_NAME}}.duckdb'
     requires:
