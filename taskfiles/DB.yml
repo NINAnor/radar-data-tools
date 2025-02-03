@@ -2,3 +2,15 @@ version: '3'
 
 includes:
   manage: ./Manage.yml
+
+
+tasks:
+  query:
+    desc: Run a query using env substituition
+    vars:
+      DB_NAME: '{{.DB_NAME| default "materialized"}}'
+    cmds:
+      - './scripts/query.sh {{.DATABASE_PATH}} {{.DB_NAME}} {{.QUERY}}'
+    requires:
+      env: [DATABASE_PATH]
+      vars: [QUERY]
