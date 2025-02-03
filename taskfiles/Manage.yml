@@ -8,7 +8,7 @@ tasks:
     vars:
       DB_NAME: '{{.DB_NAME| default "materialized"}}'
     cmds:
-      - './scripts/materialize.sh {{.DATABASE_PATH}} {{.DB_NAME}}.duckdb'
+      - './scripts/materialize.sh {{.DATABASE_PATH}} {{.DB_NAME}}'
     requires:
       env: [DATABASE_PATH]
 
