@@ -2,8 +2,8 @@ load spatial;
 
 set memory_limit = '4GB';
 
-attach '${DATABASE_PATH}' as db;
-attach '${POINT_DATABASE}' as po_db;
+attach '${DATABASE_PATH}' as db (READ_ONLY);
+attach '${POINT_DATABASE}' as po_db (READ_ONLY);
 
 
 select 
