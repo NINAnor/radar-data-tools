@@ -48,3 +48,19 @@ tasks:
       - '{{.ELEVATION_MODEL_PATH}}'
     label: 'generate-track-points-hogl_{{.RADAR_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}_{{.ELEVATION_MODEL_PATH}}'
 
+  "generate:track-points-additional":
+    desc: |
+      Compute speed, turning angle of a track point parquet and saves them into a new parquet
+    cmds:
+      - 'mkdir -p {{.output_path}}'
+      - 'ls {{.input_path}} | parallel --bar --joblog {{.joblog}} --resume --resume-failed ./scripts/compute-additional.py {{.input_path}}{1} {{.output_path}}{1}'
+    vars:
+      joblog: '{{.TEMP_DIR}}/track_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}-additional.log'
+      input_path: '{{.OUTPUT_DIR}}/track_point/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
+      output_path: '{{.OUTPUT_DIR}}/track_point_additional/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
+    requires: 
+      vars: [RADAR_NAME, YEAR, LOCATION_NAME, MONTH]
+    # sources:
+      # - '{{.OUTPUT_DIR}}/track_point/radar_name={{.RADAR_NAME}}/location={{.LOCATION_NAME}}/year={{.YEAR}}/month={{.MONTH}}/'
+    label: 'generate-track-points-additional_{{.RADAR_NAME}}_{{.LOCATION_NAME}}_{{.YEAR}}_{{.MONTH}}'
+
