@@ -14,6 +14,7 @@ in pkgs.mkShell rec {
     unstable.duckdb
     unstable.python312
     go-task
+    unstable.uv
   ];
 
   # Run this command, only after creating the virtual environment
